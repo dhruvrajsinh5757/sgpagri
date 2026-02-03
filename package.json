@@ -8,10 +8,10 @@
     "server": "nodemon backend/server.js",
     "client": "npm start --prefix frontend",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "build": "npm run build --prefix frontend",
     "install-client": "cd frontend && npm install",
     "install-server": "cd backend && npm install",
-    "install-all": "npm install && npm run install-server && npm run install-client",
-    "build": "cd frontend && npm run build"
+    "install-all": "npm install && npm run install-server && npm run install-client"
   },
   "keywords": ["mern", "agriculture", "mongodb", "express", "react", "node"],
   "author": "Your Name",

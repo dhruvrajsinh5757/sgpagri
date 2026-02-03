@@ -20,7 +20,7 @@
     "tailwindcss": "^3.3.6"
   },
   "scripts": {
-    "start": "set WDS_ALLOWED_HOSTS=all && react-scripts start",
+    "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
