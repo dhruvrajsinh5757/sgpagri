@@ -82,11 +82,12 @@
 
 import express from 'express';
 import dotenv from 'dotenv';
+// Load environment variables from .env (default)
+dotenv.config();
 import connectDB from './DB/db.js';
 import userRoutes from './DB/userRoutes.js';
 import cors from 'cors';
 import path from 'path';
-dotenv.config({ path: './config.env' });
 
 const app = express();
 
