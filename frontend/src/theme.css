@@ -1,0 +1,92 @@
+/* Theme Support CSS */
+
+/* Light Mode (default) */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f7fafc;
+  --text-primary: #1a202c;
+  --text-secondary: #4a5568;
+  --border-color: #e2e8f0;
+  --accent-color: #2F855A;
+  --accent-hover: #1F5F3F;
+  --card-bg: #ffffff;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark Mode */
+.dark {
+  --bg-primary: #1a202c;
+  --bg-secondary: #2d3748;
+  --text-primary: #f7fafc;
+  --text-secondary: #a0aec0;
+  --border-color: #4a5568;
+  --accent-color: #48bb78;
+  --accent-hover: #38a169;
+  --card-bg: #2d3748;
+  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+/* Apply theme variables */
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Theme-aware components */
+.bg-white {
+  background-color: var(--card-bg) !important;
+}
+
+.text-gray-700 {
+  color: var(--text-secondary) !important;
+}
+
+.border-gray-300 {
+  border-color: var(--border-color) !important;
+}
+
+/* Font size classes */
+.text-small {
+  font-size: 14px;
+}
+
+.text-medium {
+  font-size: 16px;
+}
+
+.text-large {
+  font-size: 18px;
+}
+
+/* Layout classes */
+.layout-compact .space-y-6 {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.layout-compact .p-6 {
+  padding: 1rem;
+}
+
+.layout-detailed .space-y-6 {
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.layout-detailed .p-6 {
+  padding: 1.5rem;
+}
+
+/* Language support */
+[data-lang="hi"] {
+  font-family: 'Noto Sans Devanagari', sans-serif;
+}
+
+[data-lang="gu"] {
+  font-family: 'Noto Sans Gujarati', sans-serif;
+}
+
+[data-lang="en"] {
+  font-family: 'Inter', sans-serif;
+}
