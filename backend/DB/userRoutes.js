@@ -1482,6 +1482,32 @@ router.get('/settings', async (req, res) => {
   }
 });
 
+// Upload Profile Photo
+router.post('/settings/upload-photo', upload.single('photo'), async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Email is required' });
+    if (!req.file) return res.status(400).json({ message: 'Photo file is required' });
+
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Get the public URL for the uploaded file
+    const photoUrl = `/uploads/${req.file.filename}`;
+
+    res.json({
+      success: true,
+      message: 'Photo uploaded successfully',
+      photoUrl: photoUrl,
+      path: photoUrl,
+    });
+  } catch (err) {
+    console.error('Photo upload error:', err);
+    res.status(500).json({ message: err.message });
+  }
+});
+
+
 router.put('/settings', async (req, res) => {
   try {
     const { email, ...settingsData } = req.body;
