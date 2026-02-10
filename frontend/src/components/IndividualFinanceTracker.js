@@ -35,6 +35,8 @@ const IndividualFinanceTracker = () => {
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [comparison, setComparison] = useState([]);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
 
   useEffect(() => {
     if (userEmail) {
@@ -59,39 +61,78 @@ const IndividualFinanceTracker = () => {
   const fetchPeople = async () => {
     try {
       const res = await axios.get('/api/user/person', { params: { email: userEmail } });
-      setPeople(res.data);
-      if (res.data.length && !selectedPerson) setSelectedPerson(res.data[0]._id);
-    } catch (e) {
-      console.error('Failed to load people', e);
+      setPeople(res.data || []);
+      if (res.data && res.data.length && !selectedPerson) setSelectedPerson(res.data[0]._id);
+    } catch (err) {
+      console.error('Failed to load people', err);
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to load people';
+      setError(errorMsg);
+      setPeople([]);
     }
   };
 
   const addPerson = async (e) => {
     e.preventDefault();
+    setError('');
+    setSuccess('');
     try {
       const res = await axios.post('/api/user/person', { email: userEmail, ...newPerson });
       setPeople([res.data.person, ...people]);
       setSelectedPerson(res.data.person._id);
       setShowPersonModal(false);
       setNewPerson({ name: '', role: '', photo: '' });
-    } catch (e) {
-      console.error('Failed to add person', e);
+      setSuccess('Person added successfully!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      console.error('Failed to add person', err);
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to add person';
+      setError(errorMsg);
     }
   };
 
   const addTransaction = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError('');
+    setSuccess('');
     try {
-      await axios.post('/api/user/transaction', {
+      if (!userEmail) {
+        setError('Please login first');
+        setLoading(false);
+        return;
+      }
+      if (!selectedPerson) {
+        setError('Please select a person');
+        setLoading(false);
+        return;
+      }
+      if (!form.amount || form.amount <= 0) {
+        setError('Please enter a valid amount');
+        setLoading(false);
+        return;
+      }
+      if (!form.category) {
+        setError('Please select a category');
+        setLoading(false);
+        return;
+      }
+      
+      const response = await axios.post('/api/user/transaction', {
         email: userEmail,
         personId: selectedPerson,
         ...form,
       });
+      
+      setSuccess(`${form.type.charAt(0).toUpperCase() + form.type.slice(1)} added successfully!`);
       setForm({ type: 'expense', amount: '', category: '', date: '', description: '', crop: '', project: '' });
       await fetchTransactions();
-    } catch (e) {
-      console.error('Failed to add transaction', e);
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err) {
+      console.error('Failed to add transaction', err);
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to add transaction';
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -100,13 +141,17 @@ const IndividualFinanceTracker = () => {
   const fetchTransactions = async () => {
     if (!userEmail || !selectedPerson) return;
     setLoading(true);
+    setError('');
     try {
       const res = await axios.get('/api/user/transactions', {
         params: { email: userEmail, person_id: selectedPerson, month, category: categoryFilter || undefined },
       });
-      setTransactions(res.data);
-    } catch (e) {
-      console.error('Failed to load transactions', e);
+      setTransactions(res.data || []);
+    } catch (err) {
+      console.error('Failed to load transactions', err);
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to load transactions';
+      setError(errorMsg);
+      setTransactions([]);
     } finally {
       setLoading(false);
     }
@@ -224,6 +269,20 @@ const IndividualFinanceTracker = () => {
           <FaUserPlus className="mr-2" /> Add Person
         </button>
       </div>
+
+      {/* Error and Success Messages */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-4 mb-6 flex items-center justify-between">
+          <span className="text-red-700">{error}</span>
+          <button onClick={() => setError('')} className="text-red-500 hover:text-red-700">×</button>
+        </div>
+      )}
+      {success && (
+        <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mb-6 flex items-center justify-between">
+          <span className="text-green-700">{success}</span>
+          <button onClick={() => setSuccess('')} className="text-green-500 hover:text-green-700">×</button>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="bg-white rounded-2xl shadow p-4 mb-6 flex flex-wrap gap-4 items-center">

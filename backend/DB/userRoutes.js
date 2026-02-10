@@ -1116,27 +1116,30 @@ router.post("/login", async (req, res) => {
 router.post("/expense", async (req, res) => {
   try {
     const { email, amount, category, crop, date, note } = req.body;
-    if (!email || !amount || !category) return res.status(400).json({ message: "Email, amount, and category are required" });
+    if (!email) return res.status(400).json({ message: "Email is required", field: 'email' });
+    if (!amount || isNaN(amount) || amount <= 0) return res.status(400).json({ message: "Valid amount is required", field: 'amount' });
+    if (!category || category.trim() === '') return res.status(400).json({ message: "Category is required", field: 'category' });
+    
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(404).json({ message: "User not found", field: 'email' });
     
     // Optional: validate crop name exists for this user
-    let cropName = crop;
+    let cropName = crop ? crop.trim() : undefined;
     let cropDoc = null;
     if (cropName) {
       cropDoc = await Crop.findOne({ user: user._id, name: cropName });
       if (!cropDoc) {
-        return res.status(400).json({ message: "Selected crop does not exist" });
+        return res.status(400).json({ message: "Selected crop does not exist", field: 'crop' });
       }
     }
     
     const expense = new Expense({
       user: user._id,
-      amount,
-      category,
+      amount: parseFloat(amount),
+      category: category.trim(),
       crop: cropName,
-      date: date ? new Date(date) : undefined,
-      note,
+      date: date ? new Date(date) : new Date(),
+      note: note ? note.trim() : undefined,
     });
     await expense.save();
     
@@ -1177,9 +1180,18 @@ router.post("/expense", async (req, res) => {
     }
     }
     
-    res.status(201).json({ message: "Expense added successfully", expense });
+    res.status(201).json({ 
+      success: true,
+      message: "Expense added successfully", 
+      expense 
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Add expense error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: err.message || 'Failed to add expense',
+      error: process.env.NODE_ENV === 'development' ? err.stack : undefined 
+    });
   }
 });
 
@@ -1187,29 +1199,44 @@ router.post("/expense", async (req, res) => {
 router.post("/income", async (req, res) => {
   try {
     const { email, amount, category, crop, date, note } = req.body;
-    if (!email || !amount || !category) return res.status(400).json({ message: "Email, amount, and category are required" });
+    if (!email) return res.status(400).json({ message: "Email is required", field: 'email' });
+    if (!amount || isNaN(amount) || amount <= 0) return res.status(400).json({ message: "Valid amount is required", field: 'amount' });
+    if (!category || category.trim() === '') return res.status(400).json({ message: "Category is required", field: 'category' });
+    
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user) return res.status(404).json({ message: "User not found", field: 'email' });
+    
     // Optional: validate crop name exists for this user
-    let cropName = crop;
+    let cropName = crop ? crop.trim() : undefined;
     if (cropName) {
       const cropDoc = await Crop.findOne({ user: user._id, name: cropName });
       if (!cropDoc) {
-        return res.status(400).json({ message: "Selected crop does not exist" });
+        return res.status(400).json({ message: "Selected crop does not exist", field: 'crop' });
       }
     }
+    
     const income = new Income({
       user: user._id,
-      amount,
-      category,
+      amount: parseFloat(amount),
+      category: category.trim(),
       crop: cropName,
-      date: date ? new Date(date) : undefined,
-      note,
+      date: date ? new Date(date) : new Date(),
+      note: note ? note.trim() : undefined,
     });
     await income.save();
-    res.status(201).json({ message: "Income added successfully", income });
+    
+    res.status(201).json({ 
+      success: true,
+      message: "Income added successfully", 
+      income 
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Add income error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: err.message || 'Failed to add income',
+      error: process.env.NODE_ENV === 'development' ? err.stack : undefined 
+    });
   }
 });
 
@@ -1386,77 +1413,126 @@ router.get('/person/:id/transactions', async (req, res) => {
 router.post('/transaction', async (req, res) => {
   try {
     const { email, personId, type, amount, category, date, description, crop, project } = req.body;
-    if (!email || !personId || !type || !amount || !category)
-      return res.status(400).json({ message: 'Missing required fields' });
+    
+    // Detailed validation
+    if (!email) return res.status(400).json({ message: 'Email is required', field: 'email' });
+    if (!personId) return res.status(400).json({ message: 'Person ID is required', field: 'personId' });
+    if (!type) return res.status(400).json({ message: 'Type (income/expense) is required', field: 'type' });
+    if (type !== 'income' && type !== 'expense') return res.status(400).json({ message: 'Type must be either "income" or "expense"', field: 'type' });
+    if (!amount || isNaN(amount) || amount <= 0) return res.status(400).json({ message: 'Valid amount is required', field: 'amount' });
+    if (!category || category.trim() === '') return res.status(400).json({ message: 'Category is required', field: 'category' });
+    
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: 'User not found' });
-    const txn = new Transaction({
+    if (!user) return res.status(404).json({ message: 'User not found', field: 'email' });
+    
+    // Verify person exists and belongs to this user
+    const person = await Person.findById(personId);
+    if (!person) return res.status(404).json({ message: 'Person not found', field: 'personId' });
+    if (person.user.toString() !== user._id.toString()) return res.status(403).json({ message: 'Person does not belong to this user' });
+    
+    const transactionData = {
       user: user._id,
       person: personId,
       type,
-      amount,
-      category,
-      date: date ? new Date(date) : undefined,
-      description,
-      crop,
-      project,
-    });
+      amount: parseFloat(amount),
+      category: category.trim(),
+      date: date ? new Date(date) : new Date(),
+      description: description ? description.trim() : undefined,
+      crop: crop ? crop.trim() : undefined,
+      project: project ? project.trim() : undefined,
+    };
+    
+    const txn = new Transaction(transactionData);
     await txn.save();
 
-    // Mirror to main Income/Expense collections
+    // Mirror to main Income/Expense collections for compatibility
     if (type === 'income') {
       const inc = new Income({
         user: user._id,
         person: personId,
-        amount,
-        category,
-        crop,
-        date: date ? new Date(date) : undefined,
-        note: description,
+        amount: parseFloat(amount),
+        category: category.trim(),
+        crop: crop ? crop.trim() : undefined,
+        date: date ? new Date(date) : new Date(),
+        note: description ? description.trim() : undefined,
       });
       await inc.save();
     } else if (type === 'expense') {
       const exp = new Expense({
         user: user._id,
         person: personId,
-        amount,
-        category,
-        crop,
-        date: date ? new Date(date) : undefined,
-        note: description,
+        amount: parseFloat(amount),
+        category: category.trim(),
+        crop: crop ? crop.trim() : undefined,
+        date: date ? new Date(date) : new Date(),
+        note: description ? description.trim() : undefined,
       });
       await exp.save();
     }
 
-    res.status(201).json({ message: 'Transaction added', transaction: txn });
+    res.status(201).json({ 
+      success: true,
+      message: `${type.charAt(0).toUpperCase() + type.slice(1)} added successfully`, 
+      transaction: txn 
+    });
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Transaction error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: err.message || 'Failed to add transaction', 
+      error: process.env.NODE_ENV === 'development' ? err.stack : undefined 
+    });
   }
 });
 
 router.get('/transactions', async (req, res) => {
   try {
     const { email, person_id, month, category, crop } = req.query;
-    if (!email) return res.status(400).json({ message: 'Email is required' });
+    if (!email) return res.status(400).json({ message: 'Email is required', field: 'email' });
+    
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) return res.status(404).json({ message: 'User not found', field: 'email' });
 
     const filter = { user: user._id };
-    if (person_id) filter.person = person_id;
-    if (category) filter.category = category;
-    if (crop) filter.crop = crop;
-
-    if (month) {
-      const [y, m] = month.split('-').map(Number); // YYYY-MM
-      const start = new Date(y, m - 1, 1);
-      const end = new Date(y, m, 0);
-      filter.date = { $gte: start, $lte: end };
+    
+    if (person_id && person_id !== 'undefined' && person_id !== '') {
+      // Verify person exists and belongs to this user
+      const person = await Person.findById(person_id);
+      if (person && person.user.toString() === user._id.toString()) {
+        filter.person = person_id;
+      }
+    }
+    
+    if (category && category !== 'undefined' && category !== '') {
+      filter.category = { $regex: category, $options: 'i' }; // Case-insensitive search
+    }
+    
+    if (crop && crop !== 'undefined' && crop !== '') {
+      filter.crop = { $regex: crop, $options: 'i' }; // Case-insensitive search
     }
 
-    const txns = await Transaction.find(filter).populate('person').sort({ date: -1 });
+    if (month && month !== 'undefined' && month !== '') {
+      const [y, m] = month.split('-').map(Number); // YYYY-MM
+      if (y && m) {
+        const start = new Date(y, m - 1, 1);
+        const end = new Date(y, m, 0, 23, 59, 59, 999);
+        filter.date = { $gte: start, $lte: end };
+      }
+    }
+
+    const txns = await Transaction.find(filter)
+      .populate('person', 'name role photo')
+      .sort({ date: -1 })
+      .lean();
+    
     res.json(txns);
   } catch (err) {
-    res.status(500).json({ message: err.message });
+    console.error('Get transactions error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: err.message || 'Failed to fetch transactions',
+      error: process.env.NODE_ENV === 'development' ? err.stack : undefined 
+    });
   }
 });
 
