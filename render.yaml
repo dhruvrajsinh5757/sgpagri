@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: sgpagri
+    name: sgpagri-backend
     env: node
     plan: free
     region: oregon
@@ -14,3 +14,14 @@ services:
         value: production
       - key: PORT
         value: 10000
+
+  - type: web
+    name: sgpagri-frontend
+    env: static
+    plan: free
+    region: oregon
+    buildCommand: cd frontend && npm install && npm run build
+    publishPath: frontend/build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://sgpagri-backend.onrender.com/api
