@@ -3,10 +3,14 @@ services:
     name: sgpagri
     env: node
     plan: free
-    buildCommand: cd backend && npm install
-    startCommand: cd backend && npm start
+    region: oregon
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
     envVars:
       - key: MONGO_URI
         scope: build
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000

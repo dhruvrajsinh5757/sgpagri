@@ -3,7 +3,7 @@
   "buildCommand": "npm run build --prefix frontend",
   "outputDirectory": "frontend/build",
   "env": {
-    "REACT_APP_API_URL": "https://sgpagri.onrender.com/api/user"
+    "REACT_APP_API_URL": "https://sgpagri.onrender.com/api"
   },
   "routes": [
     {
