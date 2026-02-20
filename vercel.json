@@ -4,11 +4,5 @@
   "outputDirectory": "frontend/build",
   "env": {
     "REACT_APP_API_URL": "https://sgpagri.onrender.com/api"
-  },
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ]
+  }
 }
