@@ -1,0 +1,9 @@
+backend/
+render.yaml
+README.md
+BACKEND_API_DOCUMENTATION.md
+ANALYTICS_MODULE_DOCUMENTATION.md
+MARKETPLACE_FEATURES.md
+.git
+.gitignore
+node_modules
